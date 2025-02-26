@@ -1,0 +1,108 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r}
+# Load necessary libraries
+library(tidyverse)
+library(DataExplorer)
+library(corrplot)
+library(randomForest)
+
+# Define file URLs (Replace 'blob' with 'raw' for direct download)
+bank_full_url <- "https://raw.githubusercontent.com/zachrose97/Assignment1Data622/main/bank-full.csv"
+bank_url <- "https://raw.githubusercontent.com/zachrose97/Assignment1Data622/main/bank.csv"
+bank_additional_full_url <- "https://raw.githubusercontent.com/zachrose97/Assignment1Data622/main/bank-additional-full.csv"
+bank_additional_url <- "https://raw.githubusercontent.com/zachrose97/Assignment1Data622/main/bank-additional.csv"
+
+# Read datasets from GitHub
+bank_full <- read.csv(bank_full_url, sep = ";")
+bank <- read.csv(bank_url, sep = ";")
+bank_additional_full <- read.csv(bank_additional_full_url, sep = ";")
+bank_additional <- read.csv(bank_additional_url, sep = ";")
+
+# View dataset structure
+str(bank_full)
+summary(bank_full)
+
+```
+
+```{r}
+# Check for missing values
+colSums(is.na(bank_full))
+
+# Check for duplicate rows
+sum(duplicated(bank_full))
+
+```
+
+```{r}
+numeric_bank <- bank_full %>%
+  mutate_if(is.character, as.factor) %>%
+  mutate_if(is.factor, as.integer)
+
+# Compute correlation matrix
+cor_matrix <- cor(numeric_bank, use = "complete.obs")
+
+# Visualize correlation matrix
+corrplot(cor_matrix, method = "color", tl.cex = 0.7)
+
+```
+
+
+```{r}
+# Plot histograms
+plot_histogram(bank_full)
+```
+
+```{r}
+# Bar plot for job distribution with rotated labels
+ggplot(bank_full, aes(x = job)) + 
+  geom_bar(fill = "steelblue") + 
+  theme_minimal() +
+  labs(title = "Distribution of Job Types", x = "Job Type", y = "Count") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate labels
+
+```
+
+
+```{r}
+bank_full$y <- ifelse(bank_full$y == "yes", 1, 0)
+
+# Train Logistic Regression Model
+log_model <- glm(y ~ ., data = bank_full, family = binomial)
+
+# Model summary
+summary(log_model)
+
+
+```
+```{r}
+bank_full$y <- as.factor(bank_full$y)
+
+# Train a Random Forest model
+rf_model <- randomForest(y ~ ., data = bank_full, ntree = 100)
+
+# View Model Summary
+print(rf_model)
+
+```
+```{r}
+# If missing values exist, replace them with median
+bank_full$age[is.na(bank_full$age)] <- median(bank_full$age, na.rm = TRUE)
+
+bank_full <- bank_full %>%
+  mutate_if(is.character, as.factor)
+
+# Normalize numerical features
+bank_full <- bank_full %>%
+  mutate_if(is.numeric, scale)
+
+# View class distribution
+table(bank_full$y)
+
+
+
+```
+
